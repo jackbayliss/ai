@@ -7,8 +7,6 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Storage;
 use InvalidArgumentException;
-use Laravel\Ai\Contracts\Files\HasName;
-use Laravel\Ai\Contracts\Files\TranscribableAudio;
 use Laravel\Ai\Contracts\Gateway\Gateway;
 use Laravel\Ai\Contracts\Gateway\StepTextGateway;
 use Laravel\Ai\Contracts\Providers\AudioProvider;
@@ -22,6 +20,7 @@ use Laravel\Ai\Files\StoredImage;
 use Laravel\Ai\Gateway\Concerns\DelegatesToTextGenerationLoop;
 use Laravel\Ai\Gateway\Concerns\HandlesFailoverErrors;
 use Laravel\Ai\Gateway\Concerns\ParsesServerSentEvents;
+use Laravel\Ai\Gateway\Concerns\ResolvesAudioFilename;
 use Laravel\Ai\Responses\AudioResponse;
 use Laravel\Ai\Responses\Data\GeneratedImage;
 use Laravel\Ai\Responses\Data\Meta;
@@ -45,6 +44,7 @@ class OpenAiGateway implements Gateway, StepTextGateway
     use DelegatesToTextGenerationLoop;
     use HandlesFailoverErrors;
     use ParsesServerSentEvents;
+    use ResolvesAudioFilename;
 
     public function __construct(protected Dispatcher $events)
     {
@@ -240,29 +240,6 @@ class OpenAiGateway implements Gateway, StepTextGateway
             ),
             new Meta($provider->name(), $model),
         );
-    }
-
-    /**
-     * Determine the appropriate filename for the audio file based on its MIME type.
-     */
-    protected function audioFilename(TranscribableAudio $audio): string
-    {
-        if ($audio instanceof HasName && $audio->name()) {
-            return $audio->name();
-        }
-
-        $extension = match ($audio->mimeType()) {
-            'audio/webm' => 'webm',
-            'audio/ogg', 'audio/ogg; codecs=opus' => 'ogg',
-            'audio/wav', 'audio/x-wav' => 'wav',
-            'audio/mp4', 'audio/m4a', 'audio/x-m4a' => 'm4a',
-            'audio/flac', 'audio/x-flac' => 'flac',
-            'audio/mpeg', 'audio/mp3' => 'mp3',
-            'audio/mpga' => 'mpga',
-            default => 'mp3',
-        };
-
-        return "audio.{$extension}";
     }
 
     /**
