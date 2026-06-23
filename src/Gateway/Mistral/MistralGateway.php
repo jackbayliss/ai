@@ -226,5 +226,4 @@ class MistralGateway implements EmbeddingGateway, TextGateway, TranscriptionGate
 
         return $parts;
     }
-
 }
